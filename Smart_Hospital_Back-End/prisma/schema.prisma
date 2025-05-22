@@ -1,0 +1,222 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              Int              @id @default(autoincrement())
+  username        String           @unique
+  passwordHash    String
+  role            Role             @default(patient)
+  createdAt       DateTime         @default(now())
+  image           String?
+  patient         Patient?
+  receptionist    Receptionist?
+  doctor          Doctor?
+  labReceptionist LabReceptionist?
+}
+
+model Receptionist {
+  userId     Int      @id
+  email      String?
+  name       String?
+  phone      String?
+  gender     String?
+  department String?
+  user       User     @relation(fields: [userId], references: [id])
+  createdAt  DateTime @default(now())
+}
+
+model Patient {
+  userId                       Int             @id
+  email                        String          @unique
+  gender                       Gender
+  phone                        String
+  birthDate                    String
+  name                         String
+  createdAt                    DateTime        @default(now())
+  updatedAt                    DateTime        @updatedAt
+  emergencyContactName         String
+  emergencyContactNumber       String
+  emergencyContactRelationship String
+  medicalHistory               String[]
+  additionalNotes              String
+  university                   String
+  user                         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings                     Booking[]
+  LabTest                      LabTest[]
+  medicalRecord                MedicalRecord[]
+  MedicalExcuse                MedicalExcuse[]
+
+  @@map("users")
+}
+
+model Doctor {
+  userId              Int               @id
+  name                String
+  categoryId          Int
+  birthDate           String
+  yearsofExperience   String
+  education           String
+  awards              String
+  specializationLong  String
+  specializationShort String
+  phone               String
+  email               String
+  week                Week[]
+  profileImage        String? // ✅ الحقل الجديد للصورة
+  category            Category          @relation(fields: [categoryId], references: [id])
+  User                User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timeSlots           TimeSlots[]
+  directReport        LabReceptionist[]
+  labTest             LabTest[]
+  medicalExcuse       MedicalExcuse[]
+  medicalRecord       MedicalRecord[]
+  createdAt           DateTime          @default(now())
+}
+
+model Category {
+  id             Int             @id @default(autoincrement())
+  name           String          @unique
+  image          String?
+  description    String?
+  link           String?
+  doctor         Doctor[]
+  medicalExcuses MedicalExcuse[] // <--- أضف هذا الحقل
+  createdAt      DateTime        @default(now())
+}
+
+model TimeSlots {
+  id        Int       @id @default(autoincrement())
+  hour      DateTime
+  shift     Shift
+  doctorId  Int
+  doctor    Doctor    @relation(fields: [doctorId], references: [userId])
+  bookings  Booking[]
+  createdAt DateTime  @default(now())
+}
+
+model Booking {
+  id          Int       @id @default(autoincrement())
+  date        DateTime
+  patientId   Int
+  timeSlotId  Int
+  patientName String
+  status      String    @default("confirmed")
+  patient     Patient?  @relation(fields: [patientId], references: [userId])
+  timeSlot    TimeSlots @relation(fields: [timeSlotId], references: [id])
+  createdAt   DateTime  @default(now())
+
+  @@unique([date, timeSlotId])
+}
+
+model LabReceptionist {
+  userId       Int      @id
+  name         String
+  birthDate    String
+  email        String   @unique
+  gender       Gender
+  phone        String
+  onBoarding   DateTime @default(now())
+  salary       Int?
+  bonus        Int?
+  supervisorId Int
+  supervisor   Doctor   @relation(fields: [supervisorId], references: [userId])
+  User         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+}
+
+model LabTest {
+  id                Int        @id @default(autoincrement())
+  name              String
+  date              String
+  status            TestStatus
+  referringDoctorId Int
+  referringDoctor   Doctor     @relation(fields: [referringDoctorId], references: [userId])
+  attachment        String?
+  accepted          Boolean    @default(false)
+  patientId         Int
+  patient           Patient    @relation(fields: [patientId], references: [userId])
+  createdAt         DateTime   @default(now())
+}
+
+model MedicalExcuse {
+  id              Int      @id @default(autoincrement())
+  patientId       Int
+  doctorId        Int
+  categoryId      Int      @default(1)
+  fullName        String
+  email           String
+  reason          String
+  startDate       DateTime
+  endDate         DateTime
+  image           String?
+  status          String?  @default("Pending")
+  rejectionReason String?  @default("")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
+
+  patient  Patient  @relation(fields: [patientId], references: [userId])
+  doctor   Doctor   @relation(fields: [doctorId], references: [userId])
+  category Category @relation(fields: [categoryId], references: [id])
+}
+
+model MedicalRecord {
+  id               Int      @id @default(autoincrement())
+  diagnosis        String // هنا تحط التشخيص اللي الدكتور كتبه
+  treatmentDetails String
+  datetime         DateTime @default(now())
+  patientId        Int
+  doctorId         Int
+  doctor           Doctor   @relation(fields: [doctorId], references: [userId])
+  patient          Patient  @relation(fields: [patientId], references: [userId])
+}
+
+enum TestStatus {
+  pending
+  completed
+}
+
+enum ExcuseStatus {
+  pending
+  approved
+  rejected
+}
+
+enum Shift {
+  Morning
+  Evening
+}
+
+enum Week {
+  Saturday
+  Sunday
+  Monday
+  Tuesday
+  Wednesday
+  Thursday
+  Friday
+}
+
+enum Role {
+  patient
+  doctor
+  lab
+  receptionist
+  admin
+}
+
+enum Gender {
+  male
+  female
+}

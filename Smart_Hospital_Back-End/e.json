@@ -1,0 +1,11 @@
+{"username":"drfdasfdsafdsa.ahefdsafdsafdsafdsafdsarwerwmed",
+"name": "Dr. Ahmed Youssef",
+"password": "secure123",
+"categoryId": 1,
+"birthDate": "1980-05-10",
+"yearsofExperience": "15",
+"education": "Cairo University",
+"awards": "Best Doctor 2020",
+"specializationLong": "Internal Medicine and Gastroenterology",
+"specializationShort": "Gastro",
+"week": ["Saturday", "Monday", "Wednesday"]}
