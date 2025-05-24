@@ -14,7 +14,8 @@ const DoctorSignUp = () => {
     confirmPassword: '',
     licenseNumber: '',
     experience: '',
-    education: ''
+    education: '',
+    birthDate: '',
   });
 
   const specializations = [
@@ -106,7 +107,7 @@ const DoctorSignUp = () => {
       password: formData.password,
       name: formData.fullName,
       categoryId: 1,
-      birthDate: '1980-01-01',
+      birthDate: formData.birthDate,
       yearsofExperience: formData.experience,
       education: formData.education,
       awards: '',

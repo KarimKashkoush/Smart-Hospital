@@ -73,7 +73,7 @@ const Home = () => {
             <div key={index} className="category-card">
               <div className="category-image-container">
                 <img
-                  src={category.image}
+                  src={`/${category.image}.png`}
                   alt={category.name}
                   className="category-image"
                   loading="lazy"

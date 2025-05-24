@@ -20,6 +20,7 @@ export const getPatientById = async (id: string) => {
                   },
                   MedicalExcuse: true,
                   medicalRecord: true,
+                  
             },
       });
 

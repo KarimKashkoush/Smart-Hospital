@@ -27,7 +27,7 @@ const RequestMedicalExcuse = () => {
   ]);
 
 
-
+  console.log("categories", categories);
 
   const [doctors, setDoctors] = useState([]);
 

@@ -235,15 +235,15 @@ const DoctorAppointments = () => {
           if (activeTab === 'today') {
             filterDate = today;
           } else if (activeTab === 'tomorrow') {
-            filterDate = new Date(today.getTime() + 86400000 * 2);
+            filterDate = new Date(today.getTime() + 86400000 * 1);
           } else if (activeTab === '3rd') {
-            filterDate = new Date(today.getTime() + 86400000 * 3);
+            filterDate = new Date(today.getTime() + 86400000 * 2);
           } else if (activeTab === '4rd') {
-            filterDate = new Date(today.getTime() + 86400000 * 4);
+            filterDate = new Date(today.getTime() + 86400000 * 3);
           } else if (activeTab === '5rd') {
-            filterDate = new Date(today.getTime() + 86400000 * 5);
+            filterDate = new Date(today.getTime() + 86400000 * 4);
           } else if (activeTab === '6rd') {
-            filterDate = new Date(today.getTime() + 86400000 * 6);
+            filterDate = new Date(today.getTime() + 86400000 * 5);
           } else {
             filterDate = null;
           }
@@ -265,11 +265,14 @@ const DoctorAppointments = () => {
             <div className="appointment-card" key={appointment.id}>
               <div className="appointment-info">
                 <h3>{appointment.patientName}</h3>
-                <p className="appointment-time">{new Date(appointment.date).toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  hour12: true,
-                })}</p>
+                <p className="appointment-time">
+                  {(() => {
+                    const originalDate = new Date(appointment.date);
+                    const hours = originalDate.getUTCHours().toString().padStart(2, '0');
+                    const minutes = originalDate.getUTCMinutes().toString().padStart(2, '0');
+                    return `${hours}:${minutes}`;
+                  })()}
+                </p>
                 <span className={`status-badge ${appointment.status}`}>
                   confirmed
                 </span>
