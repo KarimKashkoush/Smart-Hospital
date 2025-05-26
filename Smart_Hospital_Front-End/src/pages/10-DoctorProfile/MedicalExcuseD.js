@@ -29,7 +29,6 @@ const MedicalExcuseD = ({ doctorData }) => {
       if (!res.ok) throw new Error('Failed to approve request');
 
       alert(`Request #${id} approved successfully.`);
-      // ممكن تحدث بيانات الواجهة أو تعمل إعادة جلب للبيانات هنا
     } catch (error) {
       alert('Error: ' + error.message);
     }
@@ -78,36 +77,38 @@ const MedicalExcuseD = ({ doctorData }) => {
         <p className="no-requests">No current requests</p>
       ) : (
         <div className="excuse-cards-container">
-          {doctorData.medicalExcuse?.map((req) => (
-            <div className="excuse-card" key={req.id} onClick={() => handleViewDetails(req)}>
-              <div className="patient-info">
-                <h3>{req.fullName}</h3>
-                <p><span className="info-label">Email:</span> {req.email}</p>
-                <p>
-                  <span className="info-label">Period:</span>
-                  From {new Date(req.startDate).toLocaleDateString()} to {new Date(req.endDate).toLocaleDateString()}
-                </p>
-                <p><span className="info-label">Reason:</span> {req.reason}</p>
-                <p><span className="info-label">Status:</span> {req.status || "Not reviewed"}</p>
-              </div>
-
-              <div className="card-actions">
-                <div className="decision-buttons">
-                  <button className="excuse-btn reject-btn" onClick={(e) => handleReject(req.id, e)}>Reject</button>
-                  <button className="excuse-btn accept-btn" onClick={(e) => handleAccept(req.id, e)}>Accept</button>
+          {doctorData.medicalExcuse
+            ?.filter((req) => req.status === 'Pending')
+            .map((req) => (
+              <div className="excuse-card" key={req.id} onClick={() => handleViewDetails(req)}>
+                <div className="patient-info">
+                  <h3>{req.fullName}</h3>
+                  <p><span className="info-label">Email:</span> {req.email}</p>
+                  <p>
+                    <span className="info-label">Period:</span>
+                    From {new Date(req.startDate).toLocaleDateString()} to {new Date(req.endDate).toLocaleDateString()}
+                  </p>
+                  <p><span className="info-label">Reason:</span> {req.reason}</p>
+                  <p><span className="info-label">Status:</span> {req.status || "Not reviewed"}</p>
                 </div>
-                <button
-                  className="excuse-btn details-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleViewDetails(req);
-                  }}
-                >
-                  View Details
-                </button>
+
+                <div className="card-actions">
+                  <div className="decision-buttons">
+                    <button className="excuse-btn reject-btn" onClick={(e) => handleReject(req.id, e)}>Reject</button>
+                    <button className="excuse-btn accept-btn" onClick={(e) => handleAccept(req.id, e)}>Accept</button>
+                  </div>
+                  <button
+                    className="excuse-btn details-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleViewDetails(req);
+                    }}
+                  >
+                    View Details
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
         </div>
       )}
     </div>

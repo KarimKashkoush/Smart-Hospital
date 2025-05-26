@@ -1,10 +1,22 @@
 import { z } from "zod";
 
 export const createBookingSchema = z.object({
-  patientId: z.number().int().optional(),
+  patientId: z.number().int(),
   timeSlotId: z.number().int(),
-  date: z.string(),
+  dateTime: z.string().refine(val => !isNaN(Date.parse(val)), {
+    message: "Invalid date-time format",
+  }),
   patientName: z.string(),
+});
+
+export const updateBookingSchema = z.object({
+  bookingId: z.number(),
+  status: z.string().optional(),
+  timeSlotId: z.number().optional(),
+  date: z.string().optional().refine(val => !val || !isNaN(Date.parse(val)), {
+    message: "Invalid date format",
+  }),
+  patientName: z.string().optional(),
 });
 
 export const rescheduleBookingSchema = z.object({

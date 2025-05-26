@@ -1,0 +1,25 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.handlers = void 0;
+const express_1 = require("express");
+const auth_controller_1 = require("./modules/auth/auth.controller");
+const category_controller_1 = require("./modules/category/category.controller");
+const doctor_controller_1 = require("./modules/doctor/doctor.controller");
+const timeslots_controller_1 = require("./modules/timeslots/timeslots.controller");
+const booking_controller_1 = require("./modules/booking/booking.controller");
+const lab_controller_1 = require("./modules/lab/lab.controller");
+const receptionist_controller_1 = require("./modules/receptionist/receptionist.controller");
+const excuse_controller_1 = require("./modules/medical-excuse/excuse.controller");
+const medical_record_controller_1 = require("./modules/medical-record/medical-record.controller");
+const handlers = (0, express_1.Router)();
+exports.handlers = handlers;
+handlers.use(auth_controller_1.default);
+handlers.use(category_controller_1.default);
+handlers.use(doctor_controller_1.default);
+handlers.use(timeslots_controller_1.default);
+handlers.use(booking_controller_1.default);
+handlers.use(lab_controller_1.default);
+handlers.use(receptionist_controller_1.default);
+handlers.use(excuse_controller_1.medicalExcuseRouter);
+handlers.use(medical_record_controller_1.default);
+//# sourceMappingURL=handlers.js.map

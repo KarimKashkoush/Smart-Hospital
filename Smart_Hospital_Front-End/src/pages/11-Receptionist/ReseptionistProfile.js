@@ -8,6 +8,7 @@ import DoctorSchedule from "./DoctorSchedule";
 import './Receptionist.css';
 
 const ReceptionistProfile = () => {
+  
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const imgRef = useRef(null);

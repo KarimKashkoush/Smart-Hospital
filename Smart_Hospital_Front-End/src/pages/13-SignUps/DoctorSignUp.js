@@ -89,6 +89,7 @@ const DoctorSignUp = () => {
     if (!formData.licenseNumber) newErrors.licenseNumber = 'Medical license number is required';
     if (!formData.experience) newErrors.experience = 'Years of experience is required';
     if (!formData.education) newErrors.education = 'Education background is required';
+    if (!formData.birthDate) newErrors.birthDate = 'Birth date is required';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -100,7 +101,6 @@ const DoctorSignUp = () => {
     if (!validateForm()) return;
 
     setIsSubmitting(true);
-    const today = new Date().toISOString().split('T')[0]; // هيديك التاريخ بس بصيغة "YYYY-MM-DD"
 
     const postData = {
       username: formData.email,
@@ -116,11 +116,14 @@ const DoctorSignUp = () => {
       specializationLong: formData.specialization,
       specializationShort: formData.specialization,
       week: ['Sunday', 'Tuesday'],
+
       timeSlots: [
-        { shift: 'Morning', hour: `${today}T09:00:00Z` },
-        { shift: 'Evening', hour: `${today}T17:00:00Z` }
+        { dayOfWeek: 'Sunday', shift: 'Morning', startTime: '09:00', endTime: '12:00' },
+        { dayOfWeek: 'Sunday', shift: 'Evening', startTime: '17:00', endTime: '20:00' },
+        { dayOfWeek: 'Tuesday', shift: 'Morning', startTime: '10:00', endTime: '13:00' }
       ],
     };
+
 
     console.log('Sending categoryId:', postData.categoryId);  // دي هنا
 
@@ -233,6 +236,20 @@ const DoctorSignUp = () => {
               {errors.phone && <span className="error-message">{errors.phone}</span>}
             </div>
           </div>
+
+          {/* Birth Date */}
+          <div className="form-group">
+            <label>Birth Date</label>
+            <input
+              type="date"
+              name="birthDate"
+              value={formData.birthDate}
+              onChange={handleChange}
+              placeholder="Select your birth date"
+            />
+            {errors.birthDate && <span className="error-message">{errors.birthDate}</span>}
+          </div>
+
 
           {/* License Number */}
           <div className="form-group">

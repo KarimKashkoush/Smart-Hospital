@@ -57,36 +57,85 @@ const DoctorDetails = () => {
     email: "",
     phone: "",
     date: "",
-    timeSlotId: null,
+    timeSlotId: "",
     time: "",
     message: "",
     doctorId: "",
     patientId: "",
   });
 
-  const getAvailableSlotsForDate = (date) => {
-    if (!(date instanceof Date) || isNaN(date)) return [];
+  function generateTimeSlots(startTime, endTime, intervalMinutes = 15) {
+    const slots = [];
 
-    if (!doctorData.week || !doctorData.timeSlots) return [];
+    // نحول الوقت لنوع Date بس يوم وهمي عشان نقدر نستخدم الدوال
+    const [startHour, startMinute] = startTime.split(':').map(Number);
+    const [endHour, endMinute] = endTime.split(':').map(Number);
 
-    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const dayName = dayNames[date.getDay()]; // ✅ لازم date يكون من نوع Date
+    let current = new Date(2000, 0, 1, startHour, startMinute);
+    const end = new Date(2000, 0, 1, endHour, endMinute);
 
-    if (!doctorData.week.includes(dayName)) {
-      return [];
+    while (current < end) {
+      // نحول الوقت لسلسلة "HH:mm"
+      const hh = String(current.getHours()).padStart(2, '0');
+      const mm = String(current.getMinutes()).padStart(2, '0');
+      slots.push(`${hh}:${mm}`);
+
+      // نزود الوقت بربع ساعة
+      current.setMinutes(current.getMinutes() + intervalMinutes);
     }
 
-    return doctorData.timeSlots.map(slot => {
-      const slotDate = new Date(slot.hour);
-      const timeString = slotDate.toISOString().substr(11, 5);
+    return slots;
+  }
 
-      return {
-        id: slot.id,
-        time: timeString,
-        booked: slot.booked,
-      };
+  function getAvailableTimeSlotsForDay(dayOfWeek, timeSlots) {
+    // نجيب الشفتات الخاصة باليوم ده
+    const shiftsForDay = timeSlots.filter(slot => slot.dayOfWeek === dayOfWeek);
+
+    let allSlots = [];
+
+    shiftsForDay.forEach(slot => {
+      // نولد الأوقات حسب startTime و endTime
+      const times = generateTimeSlots(slot.startTime, slot.endTime, 15);
+      allSlots = allSlots.concat(times);
     });
+
+    return allSlots;
+  }
+
+
+
+  const getAvailableSlotsForDate = (date) => {
+    if (!(date instanceof Date) || isNaN(date)) return [];
+    if (!doctorData.timeSlots) return [];
+
+    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const dayName = dayNames[date.getDay()];
+
+    // فلتر الشفتات المتاحة في اليوم ده
+    const slotsForDay = doctorData.timeSlots.filter(slot => slot.dayOfWeek === dayName);
+
+    let allSlots = [];
+
+    slotsForDay.forEach(slot => {
+      // نولد كل أوقات الشيفت
+      const times = generateTimeSlots(slot.startTime, slot.endTime, 15);
+
+      times.forEach(time => {
+        allSlots.push({
+          id: slot.id, // رقم الشيفت
+          time: time,
+          booked: slot.booked,
+        });
+      });
+
+    });
+
+    // لو عايز ممكن تحذف الأوقات المحجوزة هنا حسب booked لو عندك تفاصيل الحجز لكل ربع ساعة
+
+    return allSlots;
   };
+
+
 
 
   const [rating, setRating] = useState(4);
@@ -98,26 +147,26 @@ const DoctorDetails = () => {
 
 
   const generateAvailableDates = () => {
-  if (!doctorData.timeSlots) return [];
+    if (!doctorData.timeSlots) return [];
 
-  // نستخدم Set عشان نضمن تكرار التواريخ ميبقاش موجود
-  const uniqueDatesSet = new Set();
+    const today = new Date();
+    const availableDates = [];
 
-  // ناخد التواريخ من كل timeSlot
-  doctorData.timeSlots.forEach(slot => {
-    const date = new Date(slot.hour);
-    const dateString = date.toISOString().split('T')[0]; // بس الجزء الخاص بالتاريخ
-    uniqueDatesSet.add(dateString);
-  });
+    for (let i = 0; i < 14; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
 
-  // نحول Set لمصفوفة تواريخ جديدة
-  const uniqueDates = Array.from(uniqueDatesSet).map(dateStr => new Date(dateStr));
+      const isAvailable = doctorData.timeSlots.some(slot => slot.dayOfWeek === dayName);
+      if (isAvailable) {
+        availableDates.push(date);
+      }
+    }
 
-  // نرتب التواريخ من الأصغر للأكبر (الأقدم للأحدث)
-  uniqueDates.sort((a, b) => a - b);
+    return availableDates;
+  };
 
-  return uniqueDates;
-};
+
 
 
   const availableDates = generateAvailableDates();
@@ -134,36 +183,46 @@ const DoctorDetails = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name === "timeSlotId") {
-      const selectedSlot = availableSlots.find(slot => slot.id === Number(value));
-      const newTime = selectedSlot ? selectedSlot.time : "";
+
+    if (name === "time") {
+      const selectedSlot = availableSlots.find(slot => slot.time === value);
+
       setFormData(prev => ({
         ...prev,
-        timeSlotId: Number(value),
-        time: newTime,
+        time: value,
+        timeSlotId: selectedSlot ? selectedSlot.id : "", // فقط رقم
       }));
+
       if (selectedDate) {
-        checkSlotAvailability(selectedDate, newTime);
+        checkSlotAvailability(selectedDate, value);
       }
 
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+    }
+    else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+      }));
     }
   };
 
-  const checkSlotAvailability = (dateObj, time) => {
-    if (!(dateObj instanceof Date) || isNaN(dateObj)) return; // ✅ تحقق من صحة الـ Date
+
+
+
+
+  const checkSlotAvailability = (dateObj, shift) => {
+    if (!(dateObj instanceof Date) || isNaN(dateObj)) return;
     if (!doctorData.timeSlots) return;
 
     setIsLoadingSlots(true);
 
     setTimeout(() => {
-      const slotsForDate = getAvailableSlotsForDate(dateObj); // ✅ لازم تكون Date هنا
+      const slotsForDate = getAvailableSlotsForDate(dateObj);
       setAvailableSlots(slotsForDate);
 
-      if (time) {
-        const slot = slotsForDate.find(s => s.time === time);
-        setSlotStatus(slot ? "available" : "not-available");
+      if (shift) {
+        const slot = slotsForDate.find(s => s.time === shift);
+        setSlotStatus(slot && (!slot.booked || slot.booked.length === 0) ? "available" : "not-available");
       } else {
         setSlotStatus(null);
       }
@@ -174,26 +233,24 @@ const DoctorDetails = () => {
 
 
 
+
   const user = JSON.parse(localStorage.getItem("user"));
   const Id = user?.userId;
   const role = user?.role;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("timeSlotId:", formData.timeSlotId, typeof formData.timeSlotId);
 
-    if (!selectedDate) {
-      alert("Please select a date");
-      return;
-    }
+    const timeSlotId = formData.timeSlotId; // هو رقم بالفعل
+    const selectedTime = formData.time;
+    const dateTimeString = `${selectedDate.toISOString().split('T')[0]}T${selectedTime}:00`;
 
-    if (slotStatus !== "available") {
-      alert("Please select an available time slot before submitting.");
-      return;
-    }
 
+    console.log(timeSlotId)
     try {
-      const dateStr = selectedDate.toISOString().split('T')[0];
-      const dateTimeString = `${dateStr}T${formData.time}:00.000Z`;
-      const dateTime = new Date(dateTimeString);
+      // استخدم toISOString عشان تتحول لصيغة ISO string
+      const dateStr = selectedDate.toISOString();
 
       const response = await fetch(`${process.env.REACT_APP_API_URL}/create-booking`, {
         method: "POST",
@@ -202,34 +259,34 @@ const DoctorDetails = () => {
           "Authorization": `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify({
-          timeSlotId: formData.timeSlotId,
-          date: dateTime.toISOString(),
-          patientId: Id,
+          timeSlotId,
+          dateTime: dateTimeString,
           patientName: formData.name,
-          doctorId: doctor.userId
+          patientId: Id ? Number(Id) : undefined,
         }),
       });
-
-      console.log("Response:", dateTimeString);
 
       if (!response.ok) {
         const result = await response.json();
         throw new Error(result.message || "Booking failed");
       }
 
+      // التنقل بعد الحجز
       navigate("/confirmation", {
         state: {
           doctorName: doctor.name,
-          date: dateStr,
+          date: dateStr.split("T")[0],
           time: formData.time,
           cost: "50 EGP",
-          reservationNumber: `D-${Math.floor(100000 + Math.random() * 900000)}`
+          reservationNumber: `D-${Math.floor(100000 + Math.random() * 900000)}`,
         },
       });
     } catch (error) {
       alert("Booking failed: " + error.message);
     }
   };
+
+
 
 
   // Helper to format date for display
@@ -274,7 +331,7 @@ const DoctorDetails = () => {
               <div className="image-section">
                 <div className="image-frame">
                   <img
-                    src={doctor.profileImage}
+                    src={doctor.profileImage || "/main-logo.png"}
                     alt="Dr. Nourhan Mokhtar"
                     className="service-image"
                   />
@@ -421,20 +478,32 @@ const DoctorDetails = () => {
                   <div className="form-group">
                     <label>Time:</label>
                     <select
-                      name="timeSlotId"
-                      value={formData.timeSlotId || ""}
+                      name="time"
+                      value={formData.time || ""}
                       onChange={handleChange}
                       required
                       disabled={!formData.date}
                       className="compact-time-select"
                     >
                       <option value="">Select time</option>
-                      {availableSlots.map((slot) => (
-                        <option key={slot.id} value={slot.id}>
-                          {slot.time}
-                        </option>
-                      ))}
+                      {availableSlots.map((slot, index) => {
+                        const [hh, mm] = slot.time.split(':').map(Number);
+                        const end = new Date(2000, 0, 1, hh, mm);
+                        end.setMinutes(end.getMinutes() + 15);
+                        const endHH = String(end.getHours()).padStart(2, '0');
+                        const endMM = String(end.getMinutes()).padStart(2, '0');
+                        const endTime = `${endHH}:${endMM}`;
+
+                        return (
+                          <option key={slot.time} value={slot.time}>
+                            {slot.time} - {endTime}
+                          </option>
+                        );
+                      })}
                     </select>
+
+
+
                     {slotStatus && !isLoadingSlots && formData.time && (
                       <div className={`slot-status ${slotStatus}`}>
                         {slotStatus === "available"

@@ -12,15 +12,20 @@ export const getAllTimeSlots = async () => {
 };
 export const getOneTimeSlot = async (id: string) => {
   try {
-    const timeSlots = await db.timeSlots.findFirst({
+    const timeSlot = await db.timeSlots.findFirst({
       where: {
         id: Number(id),
       },
+      include: {
+        doctor: true,
+      },
     });
-    if (!timeSlots) {
+
+    if (!timeSlot) {
       throw new AppError(StatusCodes.NOT_FOUND, "Time slot not found");
     }
-    return timeSlots;
+
+    return timeSlot;
   } catch {
     throw new AppError(StatusCodes.BAD_REQUEST, "Invalid ID");
   }

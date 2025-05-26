@@ -46,27 +46,29 @@ labRouter.post(
 labRouter.post(
   "/create-lab-test",
   checkRoles(["doctor", "lab"]),
-  validateBody(createLabTestSchema),
   validateFiles({
     attachment: {
+      required: false,
       mimeTypes: [
         "application/pdf",
-        "application/msword",
         "image/jpg",
-        "image/jpeg",
         "image/png",
+        "image/jpeg",
+        "application/docs",
       ],
-      required: false,
     },
   }),
+  validateBody(createLabTestSchema),
   expressAsyncHandler(async (req: Request, res: Response) => {
     const labTest = await createLabTest({
       ...req.body,
-      attachment: req.files?.["attachment"]?.[0],
+      attachment: req.files?.["attachment"]?.[0], // زي الـ excuse
     });
+
     res.status(StatusCodes.CREATED).json({ labTest, message: "Successful" });
   }),
 );
+
 
 labRouter.post(
   "/lab-test-status/:id",
@@ -152,6 +154,10 @@ labRouter.get(
     res.status(StatusCodes.OK).json({ labReceptionist, message: "Successful" });
   }),
 );
+
+
+
+
 
 
 

@@ -21,7 +21,6 @@ export const getDoctorBookings = async (id: string) => {
       return timeSlot.bookings.map((booking) => ({
         id: booking.id,
         date: booking.date,
-        timeSlot: timeSlot.hour,
         patientId: booking.patientId,
         patientName: booking.patient?.name,
         status: booking.status,

@@ -268,9 +268,10 @@ const DoctorAppointments = () => {
                 <p className="appointment-time">
                   {(() => {
                     const originalDate = new Date(appointment.date);
-                    const hours = originalDate.getUTCHours().toString().padStart(2, '0');
-                    const minutes = originalDate.getUTCMinutes().toString().padStart(2, '0');
+                    const hours = originalDate.getHours().toString().padStart(2, '0');
+                    const minutes = originalDate.getMinutes().toString().padStart(2, '0');
                     return `${hours}:${minutes}`;
+
                   })()}
                 </p>
                 <span className={`status-badge ${appointment.status}`}>

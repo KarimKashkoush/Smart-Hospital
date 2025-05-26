@@ -1,33 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Receptionist.css';
+import axios from 'axios';
 
 const ViewAppointment = () => {
-  const categories = [
-    { id: 'cardio', name: 'Cardiology', doctors: ['Dr. Ahmed', 'Dr. Samir'] },
-    { id: 'neuro', name: 'Neurology', doctors: ['Dr. Mona', 'Dr. Karim'] },
-    { id: 'ortho', name: 'Orthopedics', doctors: ['Dr. Youssef', 'Dr. Hana'] }
-  ];
 
-  const [appointments, setAppointments] = useState([
-    {
-      id: 1,
-      patientName: 'Ahmed Mohamed',
-      category: 'cardio',
-      doctor: 'Dr. Ahmed',
-      date: '2023-11-15',
-      time: '10:00',
-      status: 'Confirmed'
-    },
-    {
-      id: 2,
-      patientName: 'Mona Ali',
-      category: 'neuro',
-      doctor: 'Dr. Mona',
-      date: '2023-11-15',
-      time: '11:30',
-      status: 'Pending'
-    }
-  ]);
+
+  const [appointments, setAppointments] = useState([]);
 
   const [filters, setFilters] = useState({
     category: '',
@@ -35,7 +13,7 @@ const ViewAppointment = () => {
     date: '',
     status: 'all'
   });
-
+  const [categories, setCategories] = useState([]);
   const [filteredDoctors, setFilteredDoctors] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingAppointment, setEditingAppointment] = useState(null);
@@ -47,10 +25,72 @@ const ViewAppointment = () => {
     time: ''
   });
 
+
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await axios.get(`${process.env.REACT_APP_API_URL}/get-booking`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+
+        const data = response.data;
+
+        // استخراج التخصصات مع أسم الدكتور
+        const uniqueCategories = {};
+
+        data.booking.forEach(slot => {
+          const categoryId = slot.doctor.specializationShort.toLowerCase();
+          if (!uniqueCategories[categoryId]) {
+            uniqueCategories[categoryId] = {
+              id: categoryId,
+              name: slot.doctor.specializationShort,
+              doctors: []
+            };
+          }
+
+          if (!uniqueCategories[categoryId].doctors.includes(slot.doctor.name)) {
+            uniqueCategories[categoryId].doctors.push(slot.doctor.name);
+          }
+        });
+
+        const dynamicCategories = Object.values(uniqueCategories);
+        setCategories(dynamicCategories);
+
+        // تجهيز المواعيد
+        const mappedAppointments = data.booking.flatMap(slot =>
+          slot.bookings.map(booking => ({
+            id: booking.id,
+            patientName: booking.patientName,
+            category: slot.doctor.specializationShort.toLowerCase(),
+            doctor: slot.doctor.name,
+            date: booking.date.slice(0, 10),
+            time: new Date(booking.date).toLocaleTimeString(),
+            status: booking.status.charAt(0).toUpperCase() + booking.status.slice(1)
+          }))
+        );
+
+        console.log("Mapped Appointments:", mappedAppointments);
+
+        setAppointments(mappedAppointments);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+
+
+
   const handleCategoryChange = (e) => {
     const categoryId = e.target.value;
     const selectedCategory = categories.find(cat => cat.id === categoryId);
-    
+
     setFilters({
       ...filters,
       category: categoryId,
@@ -67,21 +107,34 @@ const ViewAppointment = () => {
   const handleDoctorSearch = (e) => {
     const term = e.target.value;
     setSearchTerm(term);
-    
+
     if (filters.category) {
       const selectedCategory = categories.find(cat => cat.id === filters.category);
-      const filtered = selectedCategory.doctors.filter(doctor => 
+      const filtered = selectedCategory.doctors.filter(doctor =>
         doctor.toLowerCase().includes(term.toLowerCase())
       );
       setFilteredDoctors(filtered);
     }
   };
 
-  const handleCancelAppointment = (id) => {
-    setAppointments(appointments.map(appointment => 
-      appointment.id === id ? { ...appointment, status: 'Cancelled' } : appointment
-    ));
+  const handleCancelAppointment = async (id) => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.patch(`${process.env.REACT_APP_API_URL}/update-booking-status/${id}`,
+        { status: "cancelled" },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setAppointments(appointments.map(appointment =>
+        appointment.id === id ? { ...appointment, status: "Cancelled" } : appointment
+      ));
+    } catch (error) {
+      console.error("Error cancelling appointment:", error);
+      alert("فشل في إلغاء الموعد.");
+    }
   };
+
+
 
   const handleEditAppointment = (appointment) => {
     setEditingAppointment(appointment.id);
@@ -103,8 +156,8 @@ const ViewAppointment = () => {
   };
 
   const handleSaveEdit = (id) => {
-    setAppointments(appointments.map(appointment => 
-      appointment.id === id ? { 
+    setAppointments(appointments.map(appointment =>
+      appointment.id === id ? {
         ...appointment,
         patientName: editFormData.patientName,
         category: editFormData.category,
@@ -132,10 +185,10 @@ const ViewAppointment = () => {
 
   return (
     <div className="receptionist-page">
-      
+
       <div className="content">
         <h2>View Appointments</h2>
-        
+
         <div className="appointment-filters">
           <div className="form-row">
             <div className="form-group">
@@ -150,7 +203,7 @@ const ViewAppointment = () => {
                 ))}
               </select>
             </div>
-            
+
             <div className="form-group">
               <label>Filter by Doctor:</label>
               <div className="search-select">
@@ -163,7 +216,7 @@ const ViewAppointment = () => {
                 />
                 <select
                   value={filters.doctor}
-                  onChange={(e) => setFilters({...filters, doctor: e.target.value})}
+                  onChange={(e) => setFilters({ ...filters, doctor: e.target.value })}
                   disabled={!filters.category}
                 >
                   <option value="">All Doctors</option>
@@ -174,22 +227,22 @@ const ViewAppointment = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="form-row">
             <div className="form-group">
               <label>Filter by Date:</label>
               <input
                 type="date"
                 value={filters.date}
-                onChange={(e) => setFilters({...filters, date: e.target.value})}
+                onChange={(e) => setFilters({ ...filters, date: e.target.value })}
               />
             </div>
-            
+
             <div className="form-group">
               <label>Filter by Status:</label>
               <select
                 value={filters.status}
-                onChange={(e) => setFilters({...filters, status: e.target.value})}
+                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
               >
                 <option value="all">All Statuses</option>
                 <option value="confirmed">Confirmed</option>
@@ -199,7 +252,7 @@ const ViewAppointment = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="appointments-list">
           <table>
             <thead>
@@ -270,14 +323,14 @@ const ViewAppointment = () => {
                         </span>
                       </td>
                       <td>
-                        <button 
+                        <button
                           className="save-btn"
                           onClick={() => handleSaveEdit(appointment.id)}
                         >
                           Save
                         </button>
-                        <button 
-                          className="cancel-edit-btn"
+                        <button
+                          className="cancel-btn"
                           onClick={handleCancelEdit}
                         >
                           Cancel
@@ -297,14 +350,14 @@ const ViewAppointment = () => {
                         </span>
                       </td>
                       <td>
-                        <button 
+                        <button
                           className="edit-btn"
                           onClick={() => handleEditAppointment(appointment)}
                           disabled={appointment.status === 'Cancelled'}
                         >
                           Edit
                         </button>
-                        <button 
+                        <button
                           className="cancel-btn"
                           onClick={() => handleCancelAppointment(appointment.id)}
                           disabled={appointment.status === 'Cancelled'}

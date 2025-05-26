@@ -4,12 +4,46 @@ import { AppError } from "src/shared/app-error";
 
 export const getDoctors = async () => {
   try {
-    const doctors = await db.doctor.findMany();
-    return doctors;
+    const doctors = await db.doctor.findMany({
+      include: {
+        timeSlots: {
+          include: {
+            bookings: true, // لو عايز تجيب الحجوزات لكل وقت
+          },
+        },
+      },
+    });
+
+    // ممكن تبني شكل المواعيد زي getDoctorDetails
+    const doctorsWithSlots = doctors.map((doctor) => {
+      const timeSlots = doctor.timeSlots.map((slot) => {
+        const booked = slot.bookings.map((booking) => ({
+          date: booking.date,
+          dayOfWeek: slot.dayOfWeek,
+        }));
+
+        return {
+          id: slot.id,
+          dayOfWeek: slot.dayOfWeek,
+          shift: slot.shift,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          booked,
+        };
+      });
+
+      return {
+        ...doctor,
+        timeSlots,
+      };
+    });
+
+    return doctorsWithSlots;
   } catch {
-    throw new AppError(StatusCodes.BAD_REQUEST, "Invalid ID");
+    throw new AppError(StatusCodes.BAD_REQUEST, "Failed to fetch doctors");
   }
 };
+
 
 export const getDoctorDetails = async (id: string) => {
   try {
@@ -38,13 +72,15 @@ export const getDoctorDetails = async (id: string) => {
     const bookings = timeSlots.map((slot) => {
       const booked = slot.bookings.map((booking) => ({
         date: booking.date,
-        hour: slot.hour,
+        dayOfWeek: slot.dayOfWeek,
       }));
 
       return {
         id: slot.id,
-        hour: slot.hour,
+        dayOfWeek: slot.dayOfWeek,
         shift: slot.shift,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
         booked,
       };
     });

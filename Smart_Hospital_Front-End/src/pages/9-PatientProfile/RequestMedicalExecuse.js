@@ -27,7 +27,6 @@ const RequestMedicalExcuse = () => {
   ]);
 
 
-  console.log("categories", categories);
 
   const [doctors, setDoctors] = useState([]);
 
@@ -90,9 +89,6 @@ const RequestMedicalExcuse = () => {
 
   fetchAllExcuses();
 }, [categories, doctors]);
-
-
-
 
   useEffect(() => {
     // 1- تجيب الكاتيجوريز

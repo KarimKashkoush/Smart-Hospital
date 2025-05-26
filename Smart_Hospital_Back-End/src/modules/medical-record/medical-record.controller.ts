@@ -34,7 +34,6 @@ medicalRecordRouter.post(
 
 medicalRecordRouter.get(
       "/medical-records",
-      checkRoles(["doctor", "admin"]),
       async (_req: Request, res: Response) => {
             try {
                   const records = await getMedicalRecords();

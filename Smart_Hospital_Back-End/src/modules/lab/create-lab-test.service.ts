@@ -4,7 +4,6 @@ import { Express } from "express";
 import { db } from "src";
 import { AppError } from "src/shared/app-error";
 import { StatusCodes } from "http-status-codes";
-
 export async function createLabTest({
   date,
   attachment,
@@ -16,9 +15,13 @@ export async function createLabTest({
   attachment?: Express.Multer.File;
 }) {
   const attachmentPath = attachment ? "/" + attachment.filename : undefined;
+  const doctorId = Number(referringDoctorId);
+  if (isNaN(doctorId)) {
+    throw new AppError(StatusCodes.BAD_REQUEST, "Invalid doctor ID format");
+  }
 
   const checkDoctorExists =
-    (await db.doctor.count({ where: { userId: referringDoctorId } })) > 0;
+    (await db.doctor.count({ where: { userId: doctorId } })) > 0;
 
   if (!checkDoctorExists) {
     throw new AppError(
@@ -37,16 +40,16 @@ export async function createLabTest({
   if (!user?.patient) {
     throw new AppError(StatusCodes.BAD_REQUEST, "Invalid patient username");
   }
-
+  console.log({ attachment, attachmentPath });
   const labTest = await db.labTest.create({
     data: {
       name,
-      status: status ?? "pending",
+      status: status ?? "completed",
       date,
       ...(attachment ? { attachment: attachmentPath } : { attachment: "" }),
       referringDoctor: {
         connect: {
-          userId: referringDoctorId,
+          userId: doctorId,
         },
       },
       patient: {

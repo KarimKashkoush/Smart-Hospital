@@ -21,6 +21,6 @@ export const createLabTestSchema = z.object({
   name: z.string(),
   date: z.string(),
   status: z.enum(["pending", "completed"]).optional().default("pending"),
-  referringDoctorId: z.number(),
+  referringDoctorId: z.preprocess((val) => Number(val), z.number()),
   patientUsername: z.string(),
 });

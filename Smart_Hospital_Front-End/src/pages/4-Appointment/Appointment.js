@@ -76,11 +76,11 @@ const Appointment = () => {
                 <div key={doctor.userId} className="appointment-doctor-card">
                   <div className="appointment-doctor-image">
                     <img
-                      src={doctor.profileImage}
+                      src={doctor.profileImage || '/main-logo.png'}
                       alt={doctor.name}
                       onError={(e) => {
                         e.target.onerror = null;
-                        e.target.src = "/Dr. Mohamed Nashaat.png";
+                        e.target.src = "/main-logo.png";
                       }}
                     />
                   </div>
